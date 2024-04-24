@@ -7,17 +7,25 @@ from torch_geometric.nn import GCNConv, global_mean_pool
 import torch.nn.functional as F
 import sys
 
+
 def main():
     # Redirect stdout and stderr to a log file
-    sys.stdout = open('train.log', 'w')
+    sys.stdout = open("train.log", "w")
     sys.stderr = sys.stdout
 
     # Argument parsing for checkpoint handling
     parser = argparse.ArgumentParser(description="Train a GNN on the QM9 dataset.")
-    parser.add_argument('--checkpoint', type=str, default=None,
-                        help='Path to a checkpoint file to resume training.')
-    parser.add_argument('--no-checkpoint', action='store_true',
-                        help='Start training from scratch, ignoring any existing checkpoints.')
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Path to a checkpoint file to resume training.",
+    )
+    parser.add_argument(
+        "--no-checkpoint",
+        action="store_true",
+        help="Start training from scratch, ignoring any existing checkpoints.",
+    )
     args = parser.parse_args()
 
     # Set the device
@@ -57,23 +65,46 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     criterion = torch.nn.MSELoss()
 
+    # Define training and testing functions
+    def train(model, loader, optimizer, criterion):
+        model.train()
+        total_loss = 0
+        for data in loader:
+            optimizer.zero_grad()
+            output = model(data)
+            loss = criterion(output, data.y[:, 0])
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item() * data.num_graphs
+        return total_loss / len(loader.dataset)
+
+    def test(model, loader, criterion):
+        model.eval()
+        total_loss = 0
+        with torch.no_grad():
+            for data in loader:
+                output = model(data)
+                loss = criterion(output, data.y[:, 0])
+                total_loss += loss.item() * data.num_graphs
+        return total_loss / len(loader.dataset)
+
     # Checkpoint functions
-    checkpoint_dir = './checkpoints'
+    checkpoint_dir = "./checkpoints"
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     def save_checkpoint(model, optimizer, epoch, filename):
         checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict()
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
         }
         torch.save(checkpoint, filename)
 
     def load_checkpoint(model, optimizer, path):
         checkpoint = torch.load(path)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        return checkpoint['epoch']
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        return checkpoint["epoch"]
 
     # Determine how to initialize training
     start_epoch = 0
@@ -88,29 +119,34 @@ def main():
         if checkpoint_files:
             latest_checkpoint = os.path.join(checkpoint_dir, checkpoint_files[-1])
             start_epoch = load_checkpoint(model, optimizer, latest_checkpoint)
-            print(f"Automatically resuming from the latest checkpoint: {latest_checkpoint}")
+            print(
+                f"Automatically resuming from the latest checkpoint: {latest_checkpoint}"
+            )
         else:
             print("No checkpoints found. Starting training from scratch.")
 
     # Training and evaluation loop
-    test_loss = float('inf')
+    test_loss = float("inf")
     epoch = start_epoch
     while test_loss > 0.005:
         train_loss = train(model, train_loader, optimizer, criterion)
         test_loss = test(model, test_loader, criterion)
         epoch += 1
-        print(f'Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+        print(
+            f"Epoch: {epoch}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}"
+        )
 
         if epoch % 100 == 0:
-            checkpoint_path = os.path.join(checkpoint_dir, f'model_epoch_{epoch}.pth')
+            checkpoint_path = os.path.join(checkpoint_dir, f"model_epoch_{epoch}.pth")
             save_checkpoint(model, optimizer, epoch, checkpoint_path)
-            print(f'Checkpoint saved to {checkpoint_path}')
- 
+            print(f"Checkpoint saved to {checkpoint_path}")
+
         if epoch > 1000000:
             print("Stopping early after 1,000,000 epochs.")
             break
 
     log_file.close()
+
 
 if __name__ == "__main__":
     main()
