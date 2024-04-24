@@ -3,7 +3,8 @@
 ## 1. Dijkstra:
 
 - Adds the computed shortest pathways between 2 nodes on the <current> graph representation to the feature space.
-- The shortest pathways are calculated using Dijkstra's algorithm (implemented in networkx).
+- The shortest pathways are calculated using Dijkstra's algorithm (implemented in networkx)
+  (https://networkx.org/documentation/stable/_modules/networkx/algorithms/shortest_paths/weighted.html#dijkstra_path)
 - The parameters (input sizes, feature construction, acceptance criterioon, ..etc) are the same as below.
 
 ## 2. Normal
