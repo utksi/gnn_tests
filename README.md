@@ -5,7 +5,7 @@
 - Adds the computed shortest weighted path between 2 nodes on the <current> graph representation to the feature space (before the first transformation).
 - The shortest pathways are calculated using Dijkstra's algorithm (implemented in networkx)
   (https://networkx.org/documentation/stable/_modules/networkx/algorithms/shortest_paths/weighted.html#dijkstra_path)
-- The parameters (input sizes, feature construction, acceptance criterioon, ..etc) are the same as below.
+- The parameters (input sizes, feature construction, acceptance criterion, ..etc) are the same as below.
 
 ## 2. Normal
 
